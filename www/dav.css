@@ -1,0 +1,27 @@
+h2 {
+	border: thick none #e0e0ff;
+	background-color: #e0e0ff;
+	text-align: center;
+}
+h3 {
+	background-color: #e0e0ff;
+	text-align: left;
+}
+h4 {
+	text-align: center;
+}
+pre {
+	border: medium ridge #f0f0ff;
+	background-color: #f0f0ff;
+}
+ul {
+	border: medium ridge #e0e0ff;
+}
+hr {
+	width: 80%; height: 2px;
+	}
+
+img.photo {
+	border: 8px double grey;
+}
+

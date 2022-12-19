@@ -1,0 +1,189 @@
+
+<html><head>
+<link href="dav.css" type="text/css" rel="stylesheet">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Makefile-Fortran</title></head><body>
+
+<h2>How to hand-make a makefile for a simple Fortran project</h2>
+
+<p>Here is a commented example of a makefile, suitable to work with
+GNU make, for a simple Fortran project, it takes care of the most
+common situations generating non trivial dependencies, such as
+including files, calling subroutines in different source files, using
+modules.</p>
+
+<table cellspacing="0" cellpadding="0">
+<tr><td rowspan="10">
+<!-- Generator: GNU source-highlight 2.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><i><font color="#9A1900"># A simple hand-made makefile for fortran 90 applications</font></i>
+<i><font color="#9A1900"># including most of the usual dependency cases</font></i>
+
+<i><font color="#9A1900"># ======================================================================</font></i>
+<i><font color="#9A1900"># Let's start with the declarations</font></i>
+<i><font color="#9A1900"># ======================================================================</font></i>
+
+<i><font color="#9A1900"># The compiler</font></i>
+<font color="#009900">FC =</font> gfortran
+<i><font color="#9A1900"># flags for debugging or for maximum performance, comment as necessary</font></i>
+<font color="#009900">FCFLAGS =</font> -g -fcheck-bounds
+<font color="#009900">FCFLAGS =</font> -O<font color="#993399">2</font>
+<i><font color="#9A1900"># flags forall (look for system .mod files required in gfortran)</font></i>
+FCFLAGS <font color="#990000">+=</font> -I/usr/include
+
+<i><font color="#9A1900"># libraries needed for linking</font></i>
+<i><font color="#9A1900">#LDFLAGS = -li_need_this_lib</font></i>
+
+<i><font color="#9A1900"># List of executables to be built</font></i>
+<font color="#009900">PROGRAMS =</font> exe1 exe2 exe3 exe4
+
+<i><font color="#9A1900"># "make" builds all</font></i>
+<font color="#990000">all:</font> <font color="#009900">$(PROGRAMS)</font>
+
+<i><font color="#9A1900"># ======================================================================</font></i>
+<i><font color="#9A1900"># Here come the most interesting part: the rules for exe1, exe2, exe3</font></i>
+<i><font color="#9A1900"># and exe4, modify to suit your needs</font></i>
+<i><font color="#9A1900"># ======================================================================</font></i>
+
+<i><font color="#9A1900"># exe1 is simply built by exe1.f90 through exe1.o, nothing to specify</font></i>
+<i><font color="#9A1900"># for it</font></i>
+
+<i><font color="#9A1900"># exe2.o, besides depending on exe2.f90, depends also on exe2.incf</font></i>
+<i><font color="#9A1900"># through include, if exe2.incf is newer than exe2.o, exe2.o has to be</font></i>
+<i><font color="#9A1900"># rebuilt; it not necessary to confirm the dependency of exe2.o on</font></i>
+<i><font color="#9A1900"># exe2.f90, the specific dependency is just added to the general rule</font></i>
+<font color="#990000">exe2.o:</font> exe2.incf
+
+<i><font color="#9A1900"># exe3 requires to link in, not just exe3.o, but also aux.o, which</font></i>
+<i><font color="#9A1900"># contains a subroutine called from within exe3.f90; moreover exe3 has</font></i>
+<i><font color="#9A1900"># to be rebuilt if aux.o is newer; both are accomplished by adding an</font></i>
+<i><font color="#9A1900"># explicit dependency; as before, no need to confirm that exe3 depends</font></i>
+<i><font color="#9A1900"># on exe3.o as well</font></i>
+<font color="#990000">exe3:</font> aux.o
+
+<i><font color="#9A1900"># exe4.f90 USEs a module from mod.f90, there is no standard naming</font></i>
+<i><font color="#9A1900"># convention for modules in f90, but the dependency can be built on</font></i>
+<i><font color="#9A1900"># the object files (when mod.o is generated, I am sure that</font></i>
+<i><font color="#9A1900"># any_module_inside_mod.mod has been just generated as well); mod.o</font></i>
+<i><font color="#9A1900"># has also to be linked in, so the dependency is added also for the</font></i>
+<i><font color="#9A1900"># executable</font></i>
+<font color="#990000">exe4.o:</font> mod.o
+<font color="#990000">exe4:</font> mod.o
+
+<i><font color="#9A1900"># ======================================================================</font></i>
+<i><font color="#9A1900"># And now the general rules, these should not require modification</font></i>
+<i><font color="#9A1900"># ======================================================================</font></i>
+
+<i><font color="#9A1900"># General rule for building exe from exe.o; $^ is used in order to</font></i>
+<i><font color="#9A1900"># list additional object files on which the executable depends</font></i>
+<font color="#990000">%:</font> <font color="#990000">%</font>.o
+	<font color="#009900">$(FC)</font> <font color="#009900">$(LDFLAGS)</font> -o <font color="#009900">$@</font> <font color="#009900">$^</font>
+
+<i><font color="#9A1900"># General rule for building exe.o from exe.f90 or exe.F90; $&lt; is used</font></i>
+<i><font color="#9A1900"># in order to list only the first prerequisite (the source file) and</font></i>
+<i><font color="#9A1900"># not the additional prerequisites such as module or include files</font></i>
+<font color="#990000">%</font>.o<font color="#990000">:</font> <font color="#990000">%</font>.f90
+	<font color="#009900">$(FC)</font> -c <font color="#009900">$(FCFLAGS)</font> <font color="#009900">$&lt;</font>
+
+<font color="#990000">%</font>.o<font color="#990000">:</font> <font color="#990000">%</font>.F90
+	<font color="#009900">$(FC)</font> -c <font color="#009900">$(FCFLAGS)</font> <font color="#009900">$&lt;</font>
+
+<i><font color="#9A1900"># Utility targets</font></i>
+<b><font color="#000080">.PHONY:</font></b> clean veryclean
+
+<font color="#990000">clean:</font>
+	rm -f <font color="#990000">*</font>.o <font color="#990000">*</font>.mod .MOD
+
+<font color="#990000">veryclean:</font> clean
+	rm -f <font color="#990000">*~</font> <font color="#009900">$(PROGRAMS)</font>
+
+</tt></pre>
+</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr>
+<tr>
+<td><h4>exe1.f90</h4><pre>
+PROGRAM exe1
+
+PRINT*,'Hi, I am exe1'
+
+END PROGRAM exe1
+</pre></td></tr>
+<tr>
+<td><h4>exe2.f90</h4><pre>
+PROGRAM exe2
+INCLUDE 'exe2.incf'
+
+PRINT*,'Hi, I am exe2, i=',i
+
+END PROGRAM exe2
+</pre></td><td><h4>exe2.incf</h4><pre>
+INTEGER :: i = 8
+</pre></td></tr>
+<tr>
+<td><h4>exe3.f90</h4><pre>
+PROGRAM exe3
+
+PRINT*,'Hi, I am exe3'
+CALL aux('exe3')
+
+END PROGRAM exe3
+</pre></td><td><h4>aux.f90</h4><pre>
+SUBROUTINE aux(who)
+CHARACTER(len=*) :: who
+
+PRINT*,'I have been called by ',who
+
+END SUBROUTINE aux
+</pre></td></tr>
+<tr>
+<td><h4>exe4.f90</h4><pre>
+PROGRAM exe4
+USE mod
+
+PRINT*,'Hi, I am exe4, i=',i
+
+END PROGRAM exe4
+</pre></td><td><h4>mod.f90</h4><pre>
+MODULE mod
+INTEGER :: i=4
+END MODULE mod
+</pre></td></tr>
+<tr><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td></tr>
+</table>
+
+<hr>
+
+<h3>Experimenting</h3>
+
+You can experiment by cloning
+the <a href="https://github.com/dcesari/makefile-fortran">makefile-fortran
+github repository</a> and changing to the <tt>src/</tt> directory.<br>
+
+<hr>
+
+<h3>Support</h3>
+
+If you have questions, doubts or soggestions concerning
+the makefile-fortran package, please open an issue on the
+<a href="https://github.com/dcesari/makefile-fortran/issues">makefile-fortran
+github repository</a>.
+
+<hr>
+<h3>License</h3>
+
+Makefile-Fortran<br>
+A Makefile for a simple Fortran project<br>
+Copyright (C) 2009-2022 Davide Cesari, dcesari &lt;at&gt; arpae.it<br>
+The sources are distributed according to the GNU GPL license.<br>
+
+<hr>
+
+Last Update 19/12/2022
+
+<hr>
+</body></html>
